@@ -3,9 +3,13 @@ import { ApiError, describeStatusLog, fetchDebugInfo, fetchPlayer, fetchQueue } 
 import type { OverlayTrack, PlayerState } from './api';
 import { getAccessToken, getClientId, handleAuthCallback, hasTokens, invalidateAccessToken, startLogin } from './auth';
 
-const POLL_PLAYING_MS = 2500;
-const POLL_IDLE_MS = 5000;
-const QUEUE_REFRESH_MS = 10_000;
+// Progress dihaluskan secara lokal, jadi polling tidak perlu rapat. Batas rate limit Spotify
+// berlaku per app (semua tab/aplikasi yang membuka overlay berbagi jatah yang sama).
+const POLL_PLAYING_MS = 5000;
+const POLL_IDLE_MS = 10_000;
+const QUEUE_REFRESH_MS = 20_000;
+const DEBUG_REFRESH_MS = 30_000;
+const RATE_LIMIT_BACKOFF_S = [15, 30, 60, 120];
 
 export type AuthPhase = 'checking' | 'signed-out' | 'signed-in';
 
@@ -39,6 +43,9 @@ export function useSpotifyPlayback(enabled: boolean, poll = true, debug = false)
     let timer = 0;
     let lastTrackId: string | null | undefined;
     let lastQueueAt = 0;
+    let lastDebugAt = 0;
+    let rateStep = 0;
+    let errorStep = 0;
 
     const tick = async () => {
       let delay = POLL_PLAYING_MS;
@@ -54,7 +61,15 @@ export function useSpotifyPlayback(enabled: boolean, poll = true, debug = false)
         if (cancelled) return;
         setPlayer(state);
         setMessage(null);
-        if (!state?.isPlaying) delay = POLL_IDLE_MS;
+        rateStep = 0;
+        errorStep = 0;
+        if (!state?.isPlaying) {
+          delay = POLL_IDLE_MS;
+        } else if (state.durationMs > 0) {
+          // Poll tepat setelah lagu selesai agar pergantian lagu cepat terdeteksi.
+          const remaining = state.durationMs - state.progressMs + 400;
+          delay = Math.max(1500, Math.min(POLL_PLAYING_MS, remaining));
+        }
 
         const trackId = state?.track?.id ?? null;
         if (!trackId) {
@@ -73,20 +88,28 @@ export function useSpotifyPlayback(enabled: boolean, poll = true, debug = false)
           }
         }
 
-        if (debug) {
+        if (debug && Date.now() - lastDebugAt > DEBUG_REFRESH_MS) {
+          lastDebugAt = Date.now();
           const info = await fetchDebugInfo(token);
           if (!cancelled) setDebugText(info);
         }
       } catch (e) {
         if (debug && !cancelled) setDebugText(`Error: ${e instanceof Error ? e.message : String(e)}\n${describeStatusLog()}`);
-        if (e instanceof ApiError && e.status === 401) {
+        if (e instanceof ApiError && e.status === 429) {
+          const wait = e.retryAfter
+            ? e.retryAfter + 1
+            : RATE_LIMIT_BACKOFF_S[Math.min(rateStep, RATE_LIMIT_BACKOFF_S.length - 1)];
+          rateStep += 1;
+          delay = wait * 1000;
+          setMessage(`Spotify membatasi request, mencoba lagi ${wait} detik lagi.`);
+        } else if (e instanceof ApiError && e.status === 401 && errorStep < 3) {
           invalidateAccessToken();
-          delay = 500;
-        } else if (e instanceof ApiError && e.status === 429) {
-          delay = ((e.retryAfter ?? 5) + 1) * 1000;
+          errorStep += 1;
+          delay = 1500;
         } else {
+          errorStep += 1;
           setMessage(e instanceof Error ? e.message : 'Gagal mengambil data Spotify.');
-          delay = POLL_IDLE_MS;
+          delay = Math.min(60_000, POLL_PLAYING_MS * 2 ** Math.min(errorStep, 4));
         }
       }
       if (!cancelled) timer = window.setTimeout(() => void tick(), delay);

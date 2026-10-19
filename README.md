@@ -35,7 +35,7 @@ npm run build   # hasil di dist/
 1. Sources → **+** → **Browser Source**, URL: alamat overlay kamu, ukuran awal `300 × 860`.
 2. Matikan opsi "Shutdown source when not visible" dan "Refresh browser when scene becomes active".
 3. **Login pertama dilakukan di dalam OBS**: klik kanan source → **Interact** → **Hubungkan Spotify** → **Allow**. Token tersimpan di Browser Source itu, jadi tidak perlu login lagi.
-4. Putar lagu di Spotify (app mana pun di akun yang sama). Overlay update tiap ±2,5 detik, progress dihaluskan di antaranya.
+4. Putar lagu di Spotify (app mana pun di akun yang sama). Overlay update tiap ±5 detik, progress dihaluskan di antaranya.
 
 ### Aplikasi tanpa menu Interact (mis. TikTok LIVE Studio)
 
@@ -62,10 +62,14 @@ Untuk logout / ganti akun: buka URL overlay dengan tambahan `?logout=1` sekali (
 ## Cara kerjanya
 
 - Scope yang diminta hanya `user-read-playback-state` dan `user-read-currently-playing`.
-- `GET /me/player` (lagu, play/pause, progress) dipoll tiap 2,5 detik saat memutar, 5 detik saat idle. `GET /me/player/queue` diambil saat lagu berganti dan tiap 10 detik.
+- `GET /me/player` (lagu, play/pause, progress) dipoll tiap 5 detik saat memutar (lebih cepat saat lagu hampir selesai), 10 detik saat idle. `GET /me/player/queue` diambil saat lagu berganti dan tiap 10 detik.
 - Access token diperbarui otomatis memakai refresh token; 401 memicu refresh, 429 dihormati lewat `Retry-After`.
 - Spotify hanya mengembalikan sekitar 20 item antrean. Podcast ditampilkan dengan nama show sebagai artis.
 - Kalau endpoint antrean membalas 403 (dibatasi untuk app kamu), panel menampilkan "Antrean tidak bisa diakses" dan bagian Now Playing tetap jalan.
+
+## Rate limit (error 429)
+
+Batas request Spotify berlaku per app, jadi semua tab dan aplikasi yang membuka overlay berbagi jatah yang sama. Tutup tab Chrome, halaman `?setup=1`, dan source lama yang tidak dipakai. Kalau terkena 429, overlay menunggu otomatis dengan jeda yang makin lama, dan pesannya tampil di bawah progress bar.
 
 ## Tampilan
 
