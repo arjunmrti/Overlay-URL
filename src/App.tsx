@@ -3,6 +3,7 @@ import { ListMusic, Music2 } from 'lucide-react';
 import { getClientId } from './spotify/auth';
 import { demoNowPlaying, demoQueue } from './demoData';
 import { useCoverColor } from './useCoverColor';
+import SetupCard from './SetupCard';
 import { useSpotifyPlayback } from './spotify/useSpotifyPlayback';
 
 const DEFAULT_ACCENT = '#9db4ff';
@@ -35,7 +36,8 @@ export default function App() {
   }, [isDemo, demoDuration, params]);
 
   // --- Live Spotify ---
-  const live = useSpotifyPlayback(!isDemo);
+  const setupMode = params.get('setup') === '1';
+  const live = useSpotifyPlayback(!isDemo, !setupMode);
 
   const nowTrack: { title: string; artist: string; cover: string } | null = isDemo
     ? {
@@ -72,6 +74,13 @@ export default function App() {
             Hubungkan Spotify
           </button>
         </section>
+      </main>
+    );
+  }
+  if (!isDemo && setupMode && live.phase === 'signed-in') {
+    return (
+      <main className={rootClass} style={rootStyle}>
+        <SetupCard />
       </main>
     );
   }

@@ -159,6 +159,9 @@ body { min-height: 100vh; }
 .connect-button { appearance: none; cursor: pointer; border: 0; border-radius: 999px; padding: 10px 14px; color: #0a0d14; background: #fff; font: inherit; font-size: 12px; font-weight: 700; box-shadow: 0 6px 18px rgba(0, 0, 0, .28); }
 .connect-button:hover { background: #e9edf7; }
 
+.setup-link { width: 100%; resize: none; padding: 8px 10px; border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-2); background: rgba(0, 0, 0, .28); font: inherit; font-size: 10px; line-height: 1.4; word-break: break-all; }
+.connect-button:disabled { opacity: .5; cursor: default; }
+
 /* Compact */
 .overlay--compact { width: min(100%, 260px); gap: 9px; padding: 12px 14px 16px; }
 .overlay--compact .now-playing { gap: 9px; }

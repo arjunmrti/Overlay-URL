@@ -9,7 +9,7 @@ const QUEUE_REFRESH_MS = 10_000;
 
 export type AuthPhase = 'checking' | 'signed-out' | 'signed-in';
 
-export function useSpotifyPlayback(enabled: boolean) {
+export function useSpotifyPlayback(enabled: boolean, poll = true) {
   const [phase, setPhase] = useState<AuthPhase>('checking');
   const [message, setMessage] = useState<string | null>(null);
   const [player, setPlayer] = useState<PlayerState | null>(null);
@@ -33,7 +33,7 @@ export function useSpotifyPlayback(enabled: boolean) {
 
   // 2) Polling player + queue selama sudah login.
   useEffect(() => {
-    if (!enabled || phase !== 'signed-in') return;
+    if (!enabled || !poll || phase !== 'signed-in') return;
     let cancelled = false;
     let timer = 0;
     let lastTrackId: string | null | undefined;
@@ -90,7 +90,7 @@ export function useSpotifyPlayback(enabled: boolean) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [enabled, phase]);
+  }, [enabled, poll, phase]);
 
   // 3) Interpolasi progress di antara dua polling.
   const playing = player?.isPlaying ?? false;

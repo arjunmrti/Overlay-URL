@@ -37,6 +37,14 @@ npm run build   # hasil di dist/
 3. **Login pertama dilakukan di dalam OBS**: klik kanan source → **Interact** → **Hubungkan Spotify** → **Allow**. Token tersimpan di Browser Source itu, jadi tidak perlu login lagi.
 4. Putar lagu di Spotify (app mana pun di akun yang sama). Overlay update tiap ±2,5 detik, progress dihaluskan di antaranya.
 
+### Aplikasi tanpa menu Interact (mis. TikTok LIVE Studio)
+
+1. Di browser biasa, buka `https://nama-project.vercel.app/?setup=1`, klik **Hubungkan Spotify**, login, dan Allow.
+2. Halaman akan menampilkan sebuah link panjang. Klik **Salin link**.
+3. Tempel link itu sebagai URL Link Source di aplikasi streaming. Sesi login ikut terbawa.
+
+Link itu berisi refresh token: anggap seperti password. Kalau overlay suatu saat minta login lagi, ulangi langkah di atas untuk mendapat link baru. Untuk mencabut akses, hapus app dari https://www.spotify.com/account/apps.
+
 Untuk logout / ganti akun: buka URL overlay dengan tambahan `?logout=1` sekali (lewat Interact), lalu hapus parameternya.
 
 ## Parameter URL

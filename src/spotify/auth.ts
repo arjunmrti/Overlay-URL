@@ -156,15 +156,61 @@ async function requestTokens(body: Record<string, string>, fallbackRefresh?: str
   };
 }
 
+function toBase64Url(text: string): string {
+  return btoa(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function fromBase64Url(encoded: string): string {
+  const padded = encoded.replace(/-/g, '+').replace(/_/g, '/');
+  return atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
+}
+
+/**
+ * Link overlay yang membawa sesi login (untuk aplikasi tanpa menu Interact, mis. TikTok LIVE Studio).
+ * Isinya refresh token: perlakukan seperti password.
+ */
+export function createSessionLink(): string | null {
+  const tokens = loadTokens();
+  const clientId = read(KEYS.clientId) ?? getClientId();
+  if (!tokens || !clientId) return null;
+  const keep = new URLSearchParams(window.location.search);
+  keep.delete('setup');
+  keep.delete('session');
+  keep.delete('client_id');
+  keep.set('session', toBase64Url(JSON.stringify({ c: clientId, r: tokens.refreshToken })));
+  return `${window.location.origin}${window.location.pathname}?${keep.toString()}`;
+}
+
+function importSession(encoded: string) {
+  try {
+    const json = JSON.parse(fromBase64Url(encoded)) as { c?: unknown; r?: unknown };
+    if (typeof json.c === 'string' && json.c && typeof json.r === 'string' && json.r) {
+      write(KEYS.clientId, json.c);
+      saveTokens({ accessToken: '', refreshToken: json.r, expiresAt: 0 });
+    }
+  } catch {
+    /* session rusak: diabaikan, overlay minta login seperti biasa */
+  }
+}
+
 export type CallbackResult = { status: 'none' } | { status: 'ok' } | { status: 'error'; message: string };
 
 async function runCallback(): Promise<CallbackResult> {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
+  let cleaned = false;
   if (params.get('logout') === '1') {
     logout();
     params.delete('logout');
+    cleaned = true;
+  }
+  const session = params.get('session');
+  if (session) {
+    if (!loadTokens()) importSession(session); // hanya jika belum ada sesi tersimpan
+    params.delete('session');
+    cleaned = true;
+  }
+  if (cleaned) {
     const rest = params.toString();
     window.history.replaceState(null, '', `${url.pathname}${rest ? `?${rest}` : ''}`);
   }
