@@ -37,7 +37,8 @@ export default function App() {
 
   // --- Live Spotify ---
   const setupMode = params.get('setup') === '1';
-  const live = useSpotifyPlayback(!isDemo, !setupMode);
+  const debugMode = params.get('debug') === '1';
+  const live = useSpotifyPlayback(!isDemo, !setupMode, debugMode);
 
   const nowTrack: { title: string; artist: string; cover: string } | null = isDemo
     ? {
@@ -166,6 +167,8 @@ export default function App() {
           )}
         </section>
       )}
+
+      {!isDemo && debugMode && live.debugText && <pre className="debug-box">{live.debugText}</pre>}
     </main>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ApiError, fetchPlayer, fetchQueue } from './api';
+import { ApiError, describeStatusLog, fetchDebugInfo, fetchPlayer, fetchQueue } from './api';
 import type { OverlayTrack, PlayerState } from './api';
 import { getAccessToken, getClientId, handleAuthCallback, hasTokens, invalidateAccessToken, startLogin } from './auth';
 
@@ -9,13 +9,14 @@ const QUEUE_REFRESH_MS = 10_000;
 
 export type AuthPhase = 'checking' | 'signed-out' | 'signed-in';
 
-export function useSpotifyPlayback(enabled: boolean, poll = true) {
+export function useSpotifyPlayback(enabled: boolean, poll = true, debug = false) {
   const [phase, setPhase] = useState<AuthPhase>('checking');
   const [message, setMessage] = useState<string | null>(null);
   const [player, setPlayer] = useState<PlayerState | null>(null);
   const [queue, setQueue] = useState<OverlayTrack[]>([]);
   const [queueBlocked, setQueueBlocked] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [debugText, setDebugText] = useState<string | null>(null);
 
   // 1) Proses redirect balik dari Spotify (kalau ada), lalu tentukan status login.
   useEffect(() => {
@@ -71,7 +72,13 @@ export function useSpotifyPlayback(enabled: boolean, poll = true) {
             else throw e;
           }
         }
+
+        if (debug) {
+          const info = await fetchDebugInfo(token);
+          if (!cancelled) setDebugText(info);
+        }
       } catch (e) {
+        if (debug && !cancelled) setDebugText(`Error: ${e instanceof Error ? e.message : String(e)}\n${describeStatusLog()}`);
         if (e instanceof ApiError && e.status === 401) {
           invalidateAccessToken();
           delay = 500;
@@ -90,7 +97,7 @@ export function useSpotifyPlayback(enabled: boolean, poll = true) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [enabled, poll, phase]);
+  }, [enabled, poll, debug, phase]);
 
   // 3) Interpolasi progress di antara dua polling.
   const playing = player?.isPlaying ?? false;
@@ -119,5 +126,5 @@ export function useSpotifyPlayback(enabled: boolean, poll = true) {
     elapsedSec = Math.min(player.durationMs, player.progressMs + drift) / 1000;
   }
 
-  return { phase, message, player, queue, queueBlocked, elapsedSec, connect };
+  return { phase, message, player, queue, queueBlocked, elapsedSec, connect, debugText };
 }

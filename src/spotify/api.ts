@@ -41,13 +41,24 @@ type RawItem = {
 type RawPlayer = { is_playing: boolean; progress_ms: number | null; item: RawItem | null };
 type RawQueue = { currently_playing: RawItem | null; queue: RawItem[] };
 
+// Status HTTP terakhir per endpoint, hanya untuk mode ?debug=1.
+const statusLog: Record<string, number> = {};
+
+export function describeStatusLog(): string {
+  const entries = Object.entries(statusLog);
+  return entries.length ? entries.map(([path, status]) => `${path} -> ${status}`).join('\n') : '(belum ada request)';
+}
+
 async function spotifyGet<T>(path: string, token: string): Promise<T | null> {
+  const key = path.split('?')[0];
   let res: Response;
   try {
     res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
   } catch {
+    statusLog[key] = 0;
     throw new ApiError('Jaringan tidak tersedia.', 0);
   }
+  statusLog[key] = res.status;
   if (res.status === 204) return null;
   if (!res.ok) {
     const retry = Number(res.headers.get('Retry-After'));
@@ -89,4 +100,35 @@ export async function fetchPlayer(token: string): Promise<PlayerState | null> {
 export async function fetchQueue(token: string): Promise<OverlayTrack[]> {
   const raw = await spotifyGet<RawQueue>('/me/player/queue', token);
   return (raw?.queue ?? []).map((item) => mapItem(item, 64));
+}
+
+type RawMe = { id: string; display_name: string | null };
+type RawDevices = { devices: { name: string; type: string; is_active: boolean }[] };
+
+function errText(e: unknown): string {
+  return e instanceof ApiError ? `gagal (${e.status})` : 'gagal';
+}
+
+/** Ringkasan untuk ?debug=1: akun yang login, perangkat yang terlihat, dan status tiap request. */
+export async function fetchDebugInfo(token: string): Promise<string> {
+  const lines: string[] = [];
+  try {
+    const me = await spotifyGet<RawMe>('/me', token);
+    lines.push(`Akun: ${me?.display_name ?? '-'} (${me?.id ?? '?'})`);
+  } catch (e) {
+    lines.push(`Akun: ${errText(e)}`);
+  }
+  try {
+    const data = await spotifyGet<RawDevices>('/me/player/devices', token);
+    const list = data?.devices ?? [];
+    lines.push(
+      list.length
+        ? `Perangkat: ${list.map((d) => `${d.name} [${d.type}]${d.is_active ? ' *aktif*' : ''}`).join(', ')}`
+        : 'Perangkat: tidak ada yang terlihat',
+    );
+  } catch (e) {
+    lines.push(`Perangkat: ${errText(e)}`);
+  }
+  lines.push(describeStatusLog());
+  return lines.join('\n');
 }

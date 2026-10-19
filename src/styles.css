@@ -162,6 +162,8 @@ body { min-height: 100vh; }
 .setup-link { width: 100%; resize: none; padding: 8px 10px; border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-2); background: rgba(0, 0, 0, .28); font: inherit; font-size: 10px; line-height: 1.4; word-break: break-all; }
 .connect-button:disabled { opacity: .5; cursor: default; }
 
+.debug-box { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .72); color: #bff5d4; font: 10px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+
 /* Compact */
 .overlay--compact { width: min(100%, 260px); gap: 9px; padding: 12px 14px 16px; }
 .overlay--compact .now-playing { gap: 9px; }

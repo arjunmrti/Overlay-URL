@@ -56,6 +56,7 @@ Untuk logout / ganti akun: buka URL overlay dengan tambahan `?logout=1` sekali (
 - `?idle=hide` — sembunyikan overlay saat tidak ada lagu diputar
 - `?demo=1` — paksa mode demo; di demo juga berlaku `title`, `artist`, `elapsed`, `duration`, `static=1`
 - `?client_id=...` — Client ID alternatif selain env
+- `?debug=1` — tampilkan akun yang login, perangkat Spotify yang terlihat, dan status tiap request (untuk mencari tahu kenapa lagu tidak terdeteksi)
 - `?logout=1` — hapus sesi login
 
 ## Cara kerjanya
