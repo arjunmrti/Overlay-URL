@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ListMusic, Music2 } from 'lucide-react';
 import { getClientId } from './spotify/auth';
 import { demoNowPlaying, demoQueue } from './demoData';
@@ -13,6 +13,48 @@ function formatTime(totalSeconds: number) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
+function MarqueeTitle({ text }: { text: string }) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [distance, setDistance] = useState(0);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const content = textRef.current;
+    if (!viewport || !content) return;
+
+    const measure = () => {
+      const nextDistance = Math.max(0, Math.ceil(content.scrollWidth - viewport.clientWidth));
+      setDistance((current) => current === nextDistance ? current : nextDistance);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [text]);
+
+  const duration = Math.min(24, Math.max(10, distance / 12));
+  const marqueeStyle = distance > 0
+    ? ({
+        '--marquee-distance': `${distance}px`,
+        '--marquee-duration': `${duration}s`,
+      } as React.CSSProperties)
+    : undefined;
+
+  return (
+    <div
+      ref={viewportRef}
+      className={`wide-title ${distance > 0 ? 'wide-title--marquee' : ''}`}
+      style={marqueeStyle}
+      title={text}
+    >
+      <span ref={textRef} className="wide-title-text">{text}</span>
+    </div>
+  );
+}
+
 export default function App() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const mode = params.get('mode') ?? 'full';
@@ -20,7 +62,7 @@ export default function App() {
   const queueLimit = Math.min(8, Math.max(1, Number(params.get('count') ?? 8)));
   const compact = params.get('compact') === '1';
   const hideWhenIdle = params.get('idle') === 'hide';
-  const wide = params.get('layout') === 'wide'; // layout alternatif horizontal 663×292
+  const wide = params.get('layout') === 'wide'; // layout horizontal 800×292
 
   // Demo jika diminta (?demo=1) atau Client ID belum diatur.
   const isDemo = params.get('demo') === '1' || getClientId() === null;
@@ -125,7 +167,7 @@ export default function App() {
 
   const queueEmptyText = !isDemo && live.queueBlocked ? 'Antrean tidak bisa diakses' : 'Antrean kosong';
 
-  // --- Layout alternatif: kartu horizontal (cover | info + progress | antrean) ---
+  // --- Layout horizontal: cover | informasi + progress | antrean ---
   if (wide) {
     return (
       <main className={rootClass} style={rootStyle}>
@@ -140,7 +182,7 @@ export default function App() {
             </div>
 
             <div className="wide-text">
-              <div className="wide-title" title={nowTrack?.title}>{nowTrack?.title ?? 'Tidak ada lagu diputar'}</div>
+              <MarqueeTitle text={nowTrack?.title ?? 'Tidak ada lagu diputar'} />
               <div className="wide-artist" title={nowTrack?.artist}>{nowTrack ? nowTrack.artist : 'Putar sesuatu di Spotify'}</div>
               {!isDemo && live.message && <div className="status-note wide-note">{live.message}</div>}
             </div>
@@ -161,12 +203,12 @@ export default function App() {
           <aside className="wide-queue" aria-label="Spotify queue">
             <header className="queue-header">
               <div className="queue-heading">
-                <ListMusic size={13} strokeWidth={2.2} />
+                <ListMusic size={15} strokeWidth={2.2} />
                 <span>UP NEXT</span>
               </div>
-            {queueItems.length > 0 && <span className="queue-count">{queueItems.length}</span>}
-          </header>
-          {queueItems.length === 0 ? <div className="queue-empty">{queueEmptyText}</div> : <ol className="wide-queue-list">{queueRows}</ol>}
+              {queueItems.length > 0 && <span className="queue-count">{queueItems.length}</span>}
+            </header>
+            {queueItems.length === 0 ? <div className="queue-empty">{queueEmptyText}</div> : <ol className="wide-queue-list">{queueRows}</ol>}
           </aside>
         </section>
 
