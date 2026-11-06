@@ -191,7 +191,7 @@ body { min-height: 100vh; }
 }
 @keyframes wide-title-marquee {
   0%, 12% { transform: translateX(0); }
-  88%, 100% { transform: translateX(calc(-1 * var(--marquee-distance, 0px))); }
+  88%, 100% { transform: translateX(calc(0px - var(--marquee-distance, 0px))); }
 }
 .wide-artist { margin-top: 6px; color: var(--text-2); font-size: 16px; font-weight: 500; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wide-note { margin-top: 6px; }
