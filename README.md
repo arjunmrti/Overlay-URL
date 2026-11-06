@@ -77,7 +77,7 @@ Tema glass: kartu kaca blur dengan tint gelap tipis, cover dengan glow blur dari
 
 ## Horizontal layout
 
-Gunakan parameter `?layout=wide` untuk menampilkan overlay horizontal berukuran 663 × 292: cover album di kiri, informasi lagu dan progress di tengah, serta antrean di kanan.
+Gunakan parameter `?layout=wide` untuk menampilkan overlay horizontal berukuran 800 × 292: cover album di kiri, informasi lagu dan progress di tengah, serta antrean di kanan. Judul lagu yang melebihi lebar kolom tengah akan bergerak otomatis secara horizontal; judul yang pendek tetap diam.
 
 Contoh URL untuk OBS Browser Source atau TikTok LIVE Studio:
 
@@ -85,4 +85,4 @@ Contoh URL untuk OBS Browser Source atau TikTok LIVE Studio:
 https://nama-project.vercel.app/?layout=wide
 ```
 
-Parameter antrean seperti `count`, warna `accent`, mode `demo`, dan status `idle` tetap dapat digunakan bersama layout ini.
+Atur ukuran source menjadi **800 × 292**. Parameter antrean seperti `count`, warna `accent`, mode `demo`, dan status `idle` tetap dapat digunakan bersama layout ini.
