@@ -20,6 +20,7 @@ export default function App() {
   const queueLimit = Math.min(8, Math.max(1, Number(params.get('count') ?? 8)));
   const compact = params.get('compact') === '1';
   const hideWhenIdle = params.get('idle') === 'hide';
+  const wide = params.get('layout') === 'wide'; // layout alternatif horizontal 663×292
 
   // Demo jika diminta (?demo=1) atau Client ID belum diatur.
   const isDemo = params.get('demo') === '1' || getClientId() === null;
@@ -58,10 +59,11 @@ export default function App() {
 
   const showNowPlaying = mode !== 'queue';
   const showQueue = mode !== 'now-playing';
-  const rootClass = `overlay ${compact ? 'overlay--compact' : ''}`;
+  const rootClass = `overlay ${compact ? 'overlay--compact' : ''} ${wide ? 'overlay--wide' : ''}`;
+  const statusLabel = isPlaying ? 'NOW PLAYING' : nowTrack ? 'PAUSED' : 'IDLE';
   const rootStyle = { '--accent': accent } as React.CSSProperties;
 
-  // Belum login / sedang cek / error: tampilkan kartu status, bukan overlay kosong.
+  // Belum login / sudah check / error: tampilkan kartu status, bukan overlay kosong.
   if (!isDemo && live.phase === 'checking') {
     return <main className={rootClass} style={rootStyle} />;
   }
@@ -80,7 +82,7 @@ export default function App() {
   }
   if (!isDemo && setupMode && live.phase === 'signed-in') {
     return (
-      <main className={rootClass} style={rootStyle}>
+      <main className="overlay" style={rootStyle}>
         <SetupCard />
       </main>
     );
@@ -89,31 +91,102 @@ export default function App() {
     return <main className={rootClass} style={rootStyle} />;
   }
 
+  const coverNode = (
+    <div className="cover-stage">
+      {cover && (
+        <div key={`glow-${cover}`} className="cover-glow" style={{ backgroundImage: `url("${cover}")` }} aria-hidden="true" />
+      )}
+      <div className="cover-frame">
+        {cover ? (
+          <img key={cover} className="main-cover" src={cover} alt="Album artwork" />
+        ) : (
+          <div className="cover-placeholder" aria-hidden="true">
+            <Music2 size={42} strokeWidth={1.5} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const queueRows = queueItems.map((track, index) => (
+    <li className="queue-item" key={`${track.id}-${index}`}>
+      <span className="queue-number">{index + 1}</span>
+      {track.cover ? (
+        <img className="queue-cover" src={track.cover} alt="" />
+      ) : (
+        <span className="queue-cover" aria-hidden="true" />
+      )}
+      <div className="queue-copy">
+        <div className="queue-title" title={track.title}>{track.title}</div>
+        <div className="queue-artist" title={track.artist}>{track.artist}</div>
+      </div>
+    </li>
+  ));
+
+  const queueEmptyText = !isDemo && live.queueBlocked ? 'Antrean tidak bisa diakses' : 'Antrean kosong';
+
+  // --- Layout alternatif: kartu horizontal (cover | info + progress | antrean) ---
+  if (wide) {
+    return (
+      <main className={rootClass} style={rootStyle}>
+        <section className="glass wide-card" aria-label="Spotify now playing">
+          <div className="wide-cover">{coverNode}</div>
+          <div className="wide-info">
+            <div className="pill">
+              <span className={`eq ${isPlaying ? '' : 'eq--paused'}`} aria-hidden="true">
+                <i /><i /><i />
+              </span>
+              <span>{statusLabel}</span>
+            </div>
+
+            <div className="wide-text">
+              <div className="wide-title" title={nowTrack?.title}>{nowTrack?.title ?? 'Tidak ada lagu diputar'}</div>
+              <div className="wide-artist" title={nowTrack?.artist}>{nowTrack ? nowTrack.artist : 'Putar sesuatu di Spotify'}</div>
+              {!isDemo && live.message && <div className="status-note wide-note">{live.message}</div>}
+            </div>
+
+            <div className="wide-progress" aria-label="Playback progress">
+              <div className="progress-track">
+                <div className="progress-fill" style={{ width: `${progress}%` }} />
+              </div>
+              <div className="wide-times">
+                <span className="time time--elapsed">{formatTime(elapsed)}</span>
+                <span className="time time--duration">{formatTime(duration)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="wide-divider" aria-hidden="true" />
+
+          <aside className="wide-queue" aria-label="Spotify queue">
+            <header className="queue-header">
+              <div className="queue-heading">
+                <ListMusic size={13} strokeWidth={2.2} />
+                <span>UP NEXT</span>
+              </div>
+            {queueItems.length > 0 && <span className="queue-count">{queueItems.length}</span>}
+          </header>
+          {queueItems.length === 0 ? <div className="queue-empty">{queueEmptyText}</div> : <ol className="wide-queue-list">{queueRows}</ol>}
+          </aside>
+        </section>
+
+        {!isDemo && debugMode && live.debugText && <pre className="debug-box">{live.debugText}</pre>}
+      </main>
+    );
+  }
+
   return (
     <main className={rootClass} style={rootStyle}>
       {showNowPlaying && (
         <section className="now-playing" aria-label="Now playing">
-          <div className="cover-stage">
-            {cover && (
-              <div key={`glow-${cover}`} className="cover-glow" style={{ backgroundImage: `url("${cover}")` }} aria-hidden="true" />
-            )}
-            <div className="cover-frame">
-              {cover ? (
-                <img key={cover} className="main-cover" src={cover} alt="Album artwork" />
-              ) : (
-                <div className="cover-placeholder" aria-hidden="true">
-                  <Music2 size={42} strokeWidth={1.5} />
-                </div>
-              )}
-            </div>
-          </div>
+          {coverNode}
 
           <div className="glass track-card">
             <div className="eyebrow">
               <span className={`eq ${isPlaying ? '' : 'eq--paused'}`} aria-hidden="true">
                 <i /><i /><i />
               </span>
-              <span>{isPlaying ? 'NOW PLAYING' : nowTrack ? 'PAUSED' : 'IDLE'}</span>
+              <span>{statusLabel}</span>
             </div>
             <div className="track-title" title={nowTrack?.title}>
               {nowTrack?.title ?? 'Tidak ada lagu diputar'}
@@ -143,28 +216,7 @@ export default function App() {
             </div>
             {queueItems.length > 0 && <span className="queue-count">{queueItems.length}</span>}
           </header>
-          {queueItems.length === 0 ? (
-            <div className="queue-empty">
-              {!isDemo && live.queueBlocked ? 'Antrean tidak bisa diakses' : 'Antrean kosong'}
-            </div>
-          ) : (
-            <ol className="queue-list">
-              {queueItems.map((track, index) => (
-                <li className="queue-item" key={`${track.id}-${index}`}>
-                  <span className="queue-number">{index + 1}</span>
-                  {track.cover ? (
-                    <img className="queue-cover" src={track.cover} alt="" />
-                  ) : (
-                    <span className="queue-cover" aria-hidden="true" />
-                  )}
-                  <div className="queue-copy">
-                    <div className="queue-title" title={track.title}>{track.title}</div>
-                    <div className="queue-artist" title={track.artist}>{track.artist}</div>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
+          {queueItems.length === 0 ? <div className="queue-empty">{queueEmptyText}</div> : <ol className="queue-list">{queueRows}</ol>}
         </section>
       )}
 
