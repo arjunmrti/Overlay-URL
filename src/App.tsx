@@ -62,7 +62,7 @@ export default function App() {
   const queueLimit = Math.min(8, Math.max(1, Number(params.get('count') ?? 8)));
   const compact = params.get('compact') === '1';
   const hideWhenIdle = params.get('idle') === 'hide';
-  const wide = params.get('layout') === 'wide'; // layout horizontal 800×292
+  const wide = params.get('layout') === 'wide'; // layout horizontal 653×176
 
   // Demo jika diminta (?demo=1) atau Client ID belum diatur.
   const isDemo = params.get('demo') === '1' || getClientId() === null;
