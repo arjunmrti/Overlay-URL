@@ -74,3 +74,15 @@ Batas request Spotify berlaku per app, jadi semua tab dan aplikasi yang membuka 
 ## Tampilan
 
 Tema glass: kartu kaca blur dengan tint gelap tipis, cover dengan glow blur dari gambar cover itu sendiri, dan latar overlay sepenuhnya transparan. Warna progress bar dan equalizer diambil otomatis dari cover (kalau gambar tidak bisa dibaca, dipakai warna default). Mode demo memakai cover SVG yang dibuat lewat kode, jadi project ini tidak berisi file gambar.
+
+## Horizontal layout
+
+Gunakan parameter `?layout=wide` untuk menampilkan overlay horizontal berukuran 663 × 292: cover album di kiri, informasi lagu dan progress di tengah, serta antrean di kanan.
+
+Contoh URL untuk OBS Browser Source atau TikTok LIVE Studio:
+
+```
+https://nama-project.vercel.app/?layout=wide
+```
+
+Parameter antrean seperti `count`, warna `accent`, mode `demo`, dan status `idle` tetap dapat digunakan bersama layout ini.
